@@ -71,7 +71,7 @@
 - **Error:** `ERROR: JSON output does not contain word-level timestamps`
 - **Root cause:** Line 67 calls `jq` without `-r` flag. Without `-r`, jq outputs `"yes"` (with JSON quotes). Line 69 compares against `yes` (no quotes). String `"\"yes\"" != "yes"` is true, so validation incorrectly fails. Whisper output is actually valid — JSON has 80 segments with word-level timestamps.
 - **Fix:** Add `-r` to jq on line 67: `jq -r 'if .words then "yes"...'`
-- **Whisper output:** Valid. File at work/Kierownik....json, ~100KB, segments[].words[] present.
+- **Whisper output:** Valid. File at work/sample_video....json, ~100KB, segments[].words[] present.
 
 ### Attempt 2: End-to-end test (2026-05-03 22:46) — AFTER jq -r fix
 - **Status:** FAILED at TTS generation step (segment 2)
@@ -98,8 +98,8 @@
 
 ### Attempt 3: End-to-end test (2026-05-03 23:03) — AFTER jq -r + fd3 fixes
 - **Status:** FAILED at concatenation step
-- **Error:** `[concat] Impossible to open '/home/karepiu/.../work/./Kierownik.../work/tts_out/segment_001.wav'`
-- **Root cause:** `concat_list.txt` contains relative paths prefixed with `./` (e.g. `file './Kierownik.../work/tts_out/segment_001.wav'`). FFmpeg's concat demuxer resolves paths relative to the concat file's directory (`WORK_DIR`). Since WORK_DIR = `./Kierownik.../work`, paths double to `WORK_DIR/./Kierownik.../work/tts_out/...` → file not found.
+- **Error:** `[concat] Impossible to open '~/.../work/./sample_video.../work/tts_out/segment_001.wav'`
+- **Root cause:** `concat_list.txt` contains relative paths prefixed with `./` (e.g. `file './sample_video.../work/tts_out/segment_001.wav'`). FFmpeg's concat demuxer resolves paths relative to the concat file's directory (`WORK_DIR`). Since WORK_DIR = `./sample_video.../work`, paths double to `WORK_DIR/./sample_video.../work/tts_out/...` → file not found.
 - **Fix needed:** Write absolute paths to `concat_list.txt`. Either `cd "$WORK_DIR"` before running ffmpeg, or use `realpath` / `$(cd "$(dirname "$seg_file")" && pwd)/$(basename "$seg_file")` when writing paths to the concat list.
 - **fd3 fix VERIFIED WORKING:** All 45 segments generated and converted successfully, 38 gaps created, 7 TTS overruns gracefully handled.
 - **Steps completed before failure:**
